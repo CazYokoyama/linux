@@ -60,6 +60,10 @@ struct goodix_chip_id {
 	const struct goodix_chip_data *data;
 };
 
+static bool touchscreen_inverted_x = false;
+static bool touchscreen_inverted_y = false;
+static bool touchscreen_swapped_x_y = false;
+
 static int goodix_check_cfg_8(struct goodix_ts_data *ts,
 			      const u8 *cfg, int len);
 static int goodix_check_cfg_16(struct goodix_ts_data *ts,
@@ -1231,6 +1235,13 @@ retry_read_config:
 	/* Try overriding touchscreen parameters via device properties */
 	touchscreen_parse_properties(ts->input_dev, true, &ts->prop);
 
+	ts->prop.invert_x = touchscreen_inverted_x;
+	ts->prop.invert_y = touchscreen_inverted_y;
+	ts->prop.swap_x_y = touchscreen_swapped_x_y;
+	if (ts->prop.swap_x_y) /* swap max */
+	  swap(ts->input_dev->absinfo[ABS_MT_POSITION_X],
+	       ts->input_dev->absinfo[ABS_MT_POSITION_Y]);
+
 	if (!ts->prop.max_x || !ts->prop.max_y || !ts->max_touch_num) {
 		if (!ts->reset_controller_at_probe &&
 		    ts->irq_pin_access_method != IRQ_PIN_ACCESS_NONE) {
@@ -1619,6 +1630,16 @@ static struct i2c_driver goodix_ts_driver = {
 	},
 };
 module_i2c_driver(goodix_ts_driver);
+
+module_param(touchscreen_inverted_x, bool, 0444);
+MODULE_PARM_DESC(touchscreen_inverted_x,
+		 "If touchscreen_inverted_x is set to 1, horizontal location 0(zero) is right");
+module_param(touchscreen_inverted_y, bool, 0444);
+MODULE_PARM_DESC(touchscreen_inverted_y,
+		 "If touchscreen_inverted_y is set to 1, vertical location 0(zero) is bottom");
+module_param(touchscreen_swapped_x_y, bool, 0444);
+MODULE_PARM_DESC(touchscreen_swapped_x_y,
+		 "If touchscreen_swapped_x_y is set to 1, portrait, i.e. vertical");
 
 MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@gmail.com>");
 MODULE_AUTHOR("Bastien Nocera <hadess@hadess.net>");
